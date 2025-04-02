@@ -44,6 +44,8 @@ services:
       - mariadb
     env_file:
       - ./.env
+    environment:
+      WORDPRESS_DB_HOST: mariadb:3306
 
 networks:
   inception_network:

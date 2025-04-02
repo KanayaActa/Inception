@@ -26,4 +26,4 @@ fclean: clean
 
 re: fclean all
 
-.PHONY: all prepare build up down clean fclean re
+PHONY: all prepare build up down clean fclean re

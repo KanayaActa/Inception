@@ -1,27 +1,39 @@
 #!/bin/bash
 
-# このスクリプトはDockerfileの中でCMDより前に実行する必要があります
+echo "🚀 init_db.sh started"
+echo "📦 MYSQL_DATABASE=${MYSQL_DATABASE}"
+echo "👤 MYSQL_USER=${MYSQL_USER}"
+echo "🔐 MYSQL_PASSWORD=${MYSQL_PASSWORD}"
+echo "🔐 MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}"
 
-# データベースディレクトリが空の場合のみ実行（初回起動時）
-if [ ! -d "/var/lib/mysql/mysql" ]; then
-    # MySQLデータディレクトリの初期化
+# 初期化済みかどうかをフラグファイルで判定
+if [ ! -f "/var/lib/mysql/.initialized" ]; then
+    echo "📁 MariaDB data directory not initialized. Initializing..."
+
+    # データディレクトリの初期化
     mysql_install_db --user=mysql --datadir=/var/lib/mysql
+    echo "✅ mysql_install_db completed"
 
-    # サーバーを一時的に起動
+    echo "⚙️ Running mysqld bootstrap to configure database..."
     mysqld --user=mysql --bootstrap << EOF
 USE mysql;
 FLUSH PRIVILEGES;
+
 CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
 CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
 GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
+
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-ALTER USER 'root'@'127.0.0.1' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-ALTER USER 'root'@'::1' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 FLUSH PRIVILEGES;
 EOF
 
-    echo "MariaDB initialized!"
+    # フラグファイル作成（次回以降は初期化スキップ）
+    touch /var/lib/mysql/.initialized
+    echo "✅ MariaDB initialized and ready!"
+else
+    echo "📂 MariaDB already initialized. Skipping setup."
 fi
 
-# このスクリプトはエントリポイントとして使用する場合、最後にmysqld_safeを実行するべきです
-# ただし、Dockerfileで直接CMDとして実行する場合は、ここでは何も実行せず終了します
+echo "🚀 Starting mysqld_safe server..."
+exec mysqld_safe --datadir=/var/lib/mysql --bind-address=0.0.0.0
+
