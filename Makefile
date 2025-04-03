@@ -21,8 +21,8 @@ clean: down
 
 fclean: clean
 	@docker volume rm $$(docker volume ls -q)
-	@sudo rm -rf /home/miwasa/data/mariadb/*
-	@sudo rm -rf /home/miwasa/data/wordpress/*
+	@sudo rm -rf /home/miwasa/data/mariadb/
+	@sudo rm -rf /home/miwasa/data/wordpress/
 
 re: fclean all
 
